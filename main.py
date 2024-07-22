@@ -19,38 +19,62 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 
 # Set the window size
-Window.size = (800, 600)
+Window.size = (800, 558)
+Window.minimum_width = 800
+Window.minimum_height = 558
+Window.resizable = False
 
 class IntroScreen(Screen):
     def __init__(self, **kwargs):
         super(IntroScreen, self).__init__(**kwargs)
-        layout = GridLayout()
-        layout.cols = 4
+        main_layout=BoxLayout(orientation='vertical')
+        hor_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=100)
 
-        label = Label(text='Select Difficulty')
+        #label = Label(text='Select Difficulty')
         #layout.add_widget(self.label)
 
-        button_text = {0: 'Easy 8x8', 1: 'Medium 16x16', 2: 'Hard 24x24', 3: 'Expert 30x24'}
+        game_logo = Image(source='bm.webp')
+
+        self.add_widget(main_layout)
+        main_layout.add_widget(hor_layout)
+
+        button_text = {0: 'Facil 8x8', 1: 'Medio 16x16', 2: 'Dificil 24x24', 3: 'Brigido 30x24'}
         for i in range(4):
             self.dif_button = Button(text=button_text[i], size_hint=(None, None), size=(200, 100))
             self.dif_button.bind(on_press=lambda x, i=i: self.select_difficulty(i))
-            layout.add_widget(self.dif_button)
+            hor_layout.add_widget(self.dif_button)
 
-        self.add_widget(layout)
+        main_layout.add_widget(game_logo)
+
+
 
     def select_difficulty(self, difficulty):
-        self.manager.current = 'game'
         self.manager.get_screen('game').start_game(difficulty)
-        print(difficulty)
+        self.manager.current = 'game'
 
 
 class GameScreen(Screen):
     def __init__(self, **kwargs):
         super(GameScreen, self).__init__(**kwargs)
-        self.layout = GridLayout()
-        self.layout.cols = 30
-        self.add_widget(self.layout)
+        self.main_layout = BoxLayout(orientation='vertical')
+        self.top_info = BoxLayout(orientation='horizontal', size_hint_y=None, height=100)
+        self.bombs_layout = GridLayout()
+        self.label1 = Label(text=f'Minas restantes:{remaining_mines}')
+        label2 = Label(text='Bombas:')
+        label3 = Label(text='Tiempo:')
+        self.add_widget(self.main_layout)
+        self.main_layout.add_widget(self.top_info)
+        self.top_info.add_widget(self.label1)
+        self.top_info.add_widget(label2)
+        self.top_info.add_widget(label3)
+        self.main_layout.add_widget(self.bombs_layout)
         self.buttons = {}  # Dictionary to store buttons
+
+    def on_pre_enter(self):
+        self.update_mines()
+
+    def update_mines(self):
+        self.label1.text = f'Minas restantes: {remaining_mines}'
 
     def start_game(self, dif):
 
@@ -62,9 +86,12 @@ class GameScreen(Screen):
             self.x, self.y = (24, 24)
         elif dif == 3:
             self.x, self.y = (30, 24)
-        Window.size = (32*self.x, 32*self.y)
+        Window.size = (32*self.x, 32*self.y + self.top_info.height)
+        Window.resizable = False
+        Window.minimum_width = 32*self.x
+        Window.minimum_height = 32*self.y + self.top_info.height
         reset_board(self.x, self.y, dif)
-        self.layout.cols = self.x
+        self.bombs_layout.cols = self.x
         self.create_grid(dif)
 
     def create_grid(self, dif):
@@ -73,7 +100,7 @@ class GameScreen(Screen):
             for j in range(self.x):
                 button = MinesweeperButton(grid_pos=(j, i), game_screen=self, text='', size_hint=(None, None), size=(32, 32))
                 self.buttons[(j, i)] = button
-                self.layout.add_widget(button)
+                self.bombs_layout.add_widget(button)
 
 
 class MinesweeperButton(Button):
@@ -86,6 +113,7 @@ class MinesweeperButton(Button):
         self.long_press_event = None
         self.game_screen = game_screen
         self.font_name = 'Roboto-Bold'
+        self.long_press_detected = False
         # self.bind(on_touch_down=self.on_touch_down)
         # self.bind(on_touch_up=self.on_touch_up)
 
@@ -129,10 +157,22 @@ class MinesweeperButton(Button):
             self.set_color()
 
     def handle_long_press(self):
+        global remaining_mines
         # Implement your long press logic here
         print(f"Button at {self.grid_pos} long pressed")
         # Example logic for Minesweeper (e.g., flagging a mine)
-        self.background_normal = "flag.png"  # Example flag image
+        if self.background_normal == 'atlas://data/images/defaulttheme/button':
+            self.background_normal = 'flag.png'  # Example flag image
+            remaining_mines -= 1
+        elif self.background_normal == 'flag.png':
+            self.background_normal = 'question.png'
+            remaining_mines += 1
+        elif self.background_normal == 'question.png':
+            self.background_normal = 'atlas://data/images/defaulttheme/button'
+
+
+        self.game_screen.update_mines()
+
 
     def uncover_neighbors(self, x, y, processed):
         if (x, y) in processed:
@@ -175,7 +215,7 @@ class BuscaMinas(App):
 
 
 def reset_board(x, y, diff):
-    global board, x_board, y_board
+    global board, x_board, y_board, remaining_mines
     x_board = x - 1
     y_board = y - 1
     board = np.zeros((x, y), dtype=int)
@@ -196,7 +236,9 @@ def reset_board(x, y, diff):
         for j in range(y):
             if board[i, j] != 9:
                 board[i, j] = find_neighbor(i, j)
+    remaining_mines = mines
     print(board)
+    print(f'mines: {remaining_mines}')
 
 
 def find_neighbor(x, y):
@@ -219,5 +261,6 @@ def loose():
     print('KABOOM!!! has perdido!')
 
 
+remaining_mines = 0
 if __name__ == "__main__":
     BuscaMinas().run()
