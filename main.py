@@ -33,7 +33,7 @@ class IntroScreen(Screen):
         #label = Label(text='Select Difficulty')
         #layout.add_widget(self.label)
 
-        game_logo = Image(source='bm.webp')
+        game_logo = Image(source='img/bm.webp')
 
         self.add_widget(main_layout)
         main_layout.add_widget(hor_layout)
@@ -114,8 +114,6 @@ class MinesweeperButton(Button):
         self.game_screen = game_screen
         self.font_name = 'Roboto-Bold'
         self.long_press_detected = False
-        # self.bind(on_touch_down=self.on_touch_down)
-        # self.bind(on_touch_up=self.on_touch_up)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -131,23 +129,19 @@ class MinesweeperButton(Button):
                 # Cancel the long press event if the touch is released before the timer ends
                 self.long_press_event.cancel()
                 self.long_press_event = None
-                # Handle short press here
                 if not self.long_press_detected:
                     self.handle_short_press()
             return True
         return super(MinesweeperButton, self).on_touch_up(touch)
 
     def trigger_long_press(self, dt):
-        # Handle long press here
         self.long_press_detected = True
         self.handle_long_press()
 
     def handle_short_press(self):
-        # Implement your short press logic here
         print(f"Button at {self.grid_pos} short pressed")
-        # Example logic for Minesweeper
         if board[self.grid_pos] == 9:
-            self.background_normal = "bomb.png"
+            self.background_normal = 'img/bomb.png'
             loose()
         elif board[self.grid_pos] == 0:
             self.uncover_neighbors(*self.grid_pos, set())
@@ -158,19 +152,15 @@ class MinesweeperButton(Button):
 
     def handle_long_press(self):
         global remaining_mines
-        # Implement your long press logic here
         print(f"Button at {self.grid_pos} long pressed")
-        # Example logic for Minesweeper (e.g., flagging a mine)
         if self.background_normal == 'atlas://data/images/defaulttheme/button':
-            self.background_normal = 'flag.png'  # Example flag image
+            self.background_normal = 'img/flag.png'  # Example flag image
             remaining_mines -= 1
-        elif self.background_normal == 'flag.png':
-            self.background_normal = 'question.png'
+        elif self.background_normal == 'img/flag.png':
+            self.background_normal = 'img/question.png'
             remaining_mines += 1
-        elif self.background_normal == 'question.png':
+        elif self.background_normal == 'img/question.png':
             self.background_normal = 'atlas://data/images/defaulttheme/button'
-
-
         self.game_screen.update_mines()
 
 
