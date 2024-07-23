@@ -26,6 +26,8 @@ Window.minimum_width = 800
 Window.minimum_height = 558
 Window.resizable = False
 
+#ic.disable()
+
 
 class IntroScreen(Screen):
     def __init__(self, **kwargs):
@@ -89,19 +91,11 @@ class GameScreen(Screen):
 
     def update_uncover(self):
         uncover = 0
-        ic('update_uncover')
-        ic(self.x_board)
-        ic(self.y_board)
         for i in range(int(self.x_board)):
             for j in range(int(self.y_board)):
-                ic('check if button background is black')
                 if (self.buttons[(i,j)].background_color == [0.0, 0.0, 0.0, 1.0] or
-                    self.buttons[(i,j)].background_normal == 'img/flag.png'):
-                    ic('IS')
+                        self.buttons[(i,j)].background_normal == 'img/flag.png'):
                     uncover +=1
-                else:
-                    ic('NOT')
-                    ic(self.buttons[(i,j)].background_color)
         self.uncovered.text = f'Despejado: {uncover}'
 
     def start_game(self, dif):
