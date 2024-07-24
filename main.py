@@ -39,7 +39,7 @@ class IntroScreen(Screen):
         main_layout.add_widget(hor_layout)
         button_text = {0: 'Facil 8x8', 1: 'Medio 16x16', 2: 'Dificil 24x24', 3: 'Brigido 30x24'}
         for i in range(4):
-            self.dif_button = Button(text=button_text[i], size_hint=(None, None), size=(200, 100))
+            self.dif_button = Button(text=button_text[i], size_hint=(None, None), size=(200, 100), font_name='Gabriola', font_size=42)
             self.dif_button.bind(on_press=lambda x, i=i: self.select_difficulty(i))
             hor_layout.add_widget(self.dif_button)
         main_layout.add_widget(game_logo)
@@ -55,9 +55,9 @@ class GameScreen(Screen):
         self.main_layout = BoxLayout(orientation='vertical')
         self.top_info = BoxLayout(orientation='horizontal', size_hint_y=None, height=100)
         self.bombs_layout = GridLayout()
-        self.label1 = Label(text=f'Minas restantes:{remaining_mines}')
-        self.uncovered = Label(text=f'Despejado: 0')
-        self.time_label = Label(text='Tiempo: 00:00')
+        self.label1 = Label(text=str(remaining_mines), font_name='Gabriola', font_size=36, color=[1, 0, 0, 1])
+        self.uncovered = Label(text=f'Despejado: 0', font_name='Gabriola', font_size=36)
+        self.time_label = Label(text='Tiempo: 00:00', font_name='Gabriola', font_size=36)
         self.add_widget(self.main_layout)
         self.main_layout.add_widget(self.top_info)
         self.top_info.add_widget(self.label1)
@@ -67,12 +67,13 @@ class GameScreen(Screen):
         self.buttons = {}  # Dictionary to store buttons
         self.x_board, self.y_board = (0,0)
         self.first_move = True
+        self.elapsed = 0
 
     def on_pre_enter(self):
         self.update_mines()
 
     def update_mines(self):
-        self.label1.text = f'Minas restantes: {remaining_mines}'
+        self.label1.text = str(remaining_mines)
 
     def update_time(self, *args):
         global start_time
@@ -87,16 +88,18 @@ class GameScreen(Screen):
             minutos = str('0' + str(int(minutos)))
         else:
             minutos = int(minutos)
+        self.elapsed = round(elapsed.total_seconds())
         self.time_label.text = f"Tiempo: {minutos}:{segundos}"
 
     def update_uncover(self):
         uncover = 0
-        for i in range(int(self.x_board)):
-            for j in range(int(self.y_board)):
+        for i in range(self.x_board):
+            for j in range(self.y_board):
                 if (self.buttons[(i,j)].background_color == [0.0, 0.0, 0.0, 1.0] or
                         self.buttons[(i,j)].background_normal == 'img/flag.png'):
                     uncover +=1
         self.uncovered.text = f'Despejado: {uncover}'
+        return uncover
 
     def start_game(self, dif):
         if dif == 0:
@@ -115,6 +118,20 @@ class GameScreen(Screen):
         self.bombs_layout.cols = self.x_board
         self.create_grid(dif)
 
+    def check_win(self):
+        global mines
+        win = True
+        counter = 0
+        for i in range(self.x_board):
+            for j in range(self.y_board):
+                if self.buttons[(i,j)].background_normal == 'img/flag.png':
+                    if board[(i,j)] != 9:
+                        win = False
+                    counter += 1
+        if win and counter == mines and self.update_uncover() == self.x_board * self.y_board:
+            return True
+        return False
+
     def create_grid(self, dif):
         # grid populates lr-tb
         for i in range(self.y_board):
@@ -122,6 +139,25 @@ class GameScreen(Screen):
                 button = MinesweeperButton(grid_pos=(j, i), game_screen=self, text='', size_hint=(None, None), size=(32, 32))
                 self.buttons[(j, i)] = button
                 self.bombs_layout.add_widget(button)
+
+    def loose(self):
+        print('KABOOM!!! has perdido!')
+        print(f'Total seconds: {self.elapsed}')
+        self.ticking.cancel()
+        self.show_all_mines()
+
+    def win(self):
+        print('WOW has ganado!!')
+        print(f'Total seconds: {self.elapsed}')
+        self.ticking.cancel()
+
+    def show_all_mines(self):
+        for i in range(self.x_board):
+            for j in range(self.y_board):
+                if board[(i,j)] == 9:
+                    self.buttons[(i,j)].background_normal = 'img/bomb.png'
+
+
 
 
 class MinesweeperButton(Button):
@@ -159,12 +195,12 @@ class MinesweeperButton(Button):
         global start_time
         if self.game_screen.first_move:
             start_time = datetime.now()
-            Clock.schedule_interval(self.game_screen.update_time, 1)
+            self.game_screen.ticking = Clock.schedule_interval(self.game_screen.update_time, 1)
             self.game_screen.first_move = False
         print(f"Button at {self.grid_pos} short pressed")
         if board[self.grid_pos] == 9:
             self.background_normal = 'img/bomb.png'
-            loose()
+            self.game_screen.loose()
         elif board[self.grid_pos] == 0:
             self.uncover_neighbors(*self.grid_pos, set())
         else:
@@ -172,6 +208,8 @@ class MinesweeperButton(Button):
             self.background_color = "#000000"
             self.set_color()
         self.game_screen.update_uncover()
+        if self.game_screen.check_win():
+            self.game_screen.win()
 
     def handle_long_press(self):
         global remaining_mines
@@ -186,6 +224,8 @@ class MinesweeperButton(Button):
             self.background_normal = 'atlas://data/images/defaulttheme/button'
         self.game_screen.update_mines()
         self.game_screen.update_uncover()
+        if self.game_screen.check_win():
+            self.game_screen.win()
 
     def uncover_neighbors(self, x, y, processed):
         if (x, y) in processed:
@@ -228,7 +268,7 @@ class BuscaMinas(App):
 
 
 def reset_board(x, y, diff):
-    global board, x_board, y_board, remaining_mines
+    global board, x_board, y_board, remaining_mines, mines
     x_board = x - 1
     y_board = y - 1
     board = np.zeros((x, y), dtype=int)
@@ -268,8 +308,7 @@ def find_neighbor(x, y):
     return bombs
 
 
-def loose():
-    print('KABOOM!!! has perdido!')
+
 
 
 global remaining_mines
