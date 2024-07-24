@@ -1,7 +1,6 @@
 """
 BuscaMinas 2024
 """
-from icecream import ic
 from datetime import datetime
 import sys
 import pandas as pd
@@ -25,8 +24,6 @@ Window.size = (800, 558)
 Window.minimum_width = 800
 Window.minimum_height = 558
 Window.resizable = False
-
-#ic.disable()
 
 
 class IntroScreen(Screen):
@@ -151,6 +148,9 @@ class GameScreen(Screen):
         print('WOW has ganado!!')
         print(f'GEM time: {self.gem_time}')
         print(f'Total seconds: {self.elapsed}')
+        score = self.get_score(self.elapsed, self.gem_time)
+        score_chile = f'{score:,}'.replace(',', '.')
+        print(f'SCORE: {score_chile}')
         self.ticking.cancel()
 
     def show_all_mines(self):
@@ -159,7 +159,12 @@ class GameScreen(Screen):
                 if board[(i,j)] == 9:
                     self.buttons[(i,j)].background_normal = 'img/bomb.png'
 
-
+    def get_score(self, total_time, gem_time):
+        base = 10000 * self.x_board * self.y_board
+        gem = max(0, base - (gem_time * 106666))
+        score = int(base + gem - (total_time * 10000))
+        print(f'base {base} gem {gem} score {score}')
+        return  max(0, score)
 
 
 class MinesweeperButton(Button):
@@ -282,9 +287,9 @@ def reset_board(x, y, diff):
     if diff <= 1:
         mines = round(x * y * 0.1)
     elif diff == 2:
-        mines = round(x * y * 0.2)
+        mines = round(x * y * 0.15)
     elif diff >= 3:
-        mines = round(x * y * 0.25)
+        mines = round(x * y * 0.20)
     grid_size = np.arange(x * y)
     rand_mines = np.random.choice(grid_size, mines, replace=False)
     mask = np.isin(grid_size, rand_mines, invert=True)
