@@ -96,7 +96,8 @@ class GameScreen(Screen):
         for i in range(self.x_board):
             for j in range(self.y_board):
                 if (self.buttons[(i,j)].background_color == [0.0, 0.0, 0.0, 1.0] or
-                        self.buttons[(i,j)].background_normal == 'img/flag.png'):
+                        self.buttons[(i,j)].background_normal == 'img/flag.png' or
+                        self.buttons[(i,j)].background_normal == 'img/gem.png'):
                     uncover +=1
         self.uncovered.text = f'Despejado: {uncover}'
         return uncover
@@ -148,6 +149,7 @@ class GameScreen(Screen):
 
     def win(self):
         print('WOW has ganado!!')
+        print(f'GEM time: {self.gem_time}')
         print(f'Total seconds: {self.elapsed}')
         self.ticking.cancel()
 
@@ -203,6 +205,9 @@ class MinesweeperButton(Button):
             self.game_screen.loose()
         elif board[self.grid_pos] == 0:
             self.uncover_neighbors(*self.grid_pos, set())
+        elif board[self.grid_pos] == 10:
+            self.background_normal = 'img/gem.png'
+            self.game_screen.gem_time = self.game_screen.elapsed
         else:
             self.text = str(board[self.grid_pos])
             self.background_color = "#000000"
@@ -240,6 +245,8 @@ class MinesweeperButton(Button):
                     if 0 <= x + dx <= x_board and 0 <= y + dy <= y_board:
                         if board[(x + dx, y + dy)] == 0:
                             self.uncover_neighbors(x + dx, y + dy, processed)
+                        elif board[(x + dx, y + dy)] == 10:
+                            continue
                         else:
                             if self.game_screen.buttons[(x + dx, y + dy)].background_color != "#000000":
                                 self.game_screen.buttons[(x + dx, y + dy)].text = str(board[x + dx, y + dy])
@@ -280,14 +287,19 @@ def reset_board(x, y, diff):
         mines = round(x * y * 0.25)
     grid_size = np.arange(x * y)
     rand_mines = np.random.choice(grid_size, mines, replace=False)
-    print(rand_mines)
+    mask = np.isin(grid_size, rand_mines, invert=True)
+    new_array = grid_size[mask]
+    rand_gem = np.random.choice(new_array, 1)
+    print(rand_gem)
     bomb_positions = [(pos // y, pos % y) for pos in rand_mines]
+    gem_position = (rand_gem // y, rand_gem % y)
     print(bomb_positions)
     for pos in bomb_positions:
         board[pos] = 9
+    board[gem_position] = 10
     for i in range(x):
         for j in range(y):
-            if board[i, j] != 9:
+            if board[i, j] < 9:
                 board[i, j] = find_neighbor(i, j)
     remaining_mines = mines
     print(board)
@@ -306,9 +318,6 @@ def find_neighbor(x, y):
                     if board[(x + dx, y + dy)] == 9:
                         bombs += 1
     return bombs
-
-
-
 
 
 global remaining_mines
