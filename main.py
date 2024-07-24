@@ -1,6 +1,19 @@
 """
 BuscaMinas 2024
+
+@author(s): Felipe Gaete R.
+@year(s): 2024-
+@First version: 0.7
+@Current version: 0.7
+@Pylint grading: TBA
+@Usage: python main.py
+@Licence: GPL 3.0
+
+Update log
+
+- 24.7.24 -FGa - First version
 """
+
 from datetime import datetime
 import sys
 import pandas as pd
