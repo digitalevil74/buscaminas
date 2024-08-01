@@ -165,6 +165,7 @@ class GameScreen(Screen):
         score_chile = f'{score:,}'.replace(',', '.')
         print(f'SCORE: {score_chile}')
         self.ticking.cancel()
+        self.manager.current = 'scores'
 
     def show_all_mines(self):
         for i in range(self.x_board):
@@ -178,6 +179,30 @@ class GameScreen(Screen):
         score = int(base + gem - (total_time * 10000))
         print(f'base {base} gem {gem} score {score}')
         return  max(0, score)
+
+
+class Scores(Screen):
+    def __init__(self, **kwargs):
+        super(Scores, self).__init__(**kwargs)
+        self.main_layout = GridLayout(cols=1)
+        self.top_info = BoxLayout(orientation='horizontal', size_hint_y=None, height=100)
+        self.top_info2 = BoxLayout(orientation='horizontal', size_hint_y=None, height=50, pos_hint={'left': 1})
+        self.label1 = Label(text='Hall of Fame', font_name='Gabriola', font_size=36, color=[1, 0, 0, 1])
+        self.name_label = Label(text='Enter your name:', font_name='Gabriola', font_size=36)
+        self.input = TextInput(font_name='Gabriola', font_size=36, write_tab=False, multiline=False,
+                               on_text_validate=self.send_score, size_hint=(None, None), size=(200,50))
+        dummy=Label(text='')
+        self.add_widget(self.main_layout)
+        self.main_layout.add_widget(self.top_info)
+        self.top_info.add_widget(self.label1)
+        self.main_layout.add_widget(self.top_info2)
+        self.top_info2.add_widget(self.name_label)
+        self.top_info2.add_widget(self.input)
+        self.top_info2.add_widget(dummy)
+
+    def send_score(self, instance):
+        print(f'Sending Scores name: {instance.text}')
+        self.input.disabled = True
 
 
 class MinesweeperButton(Button):
@@ -289,6 +314,7 @@ class BuscaMinas(App):
         sm = ScreenManager()
         sm.add_widget(IntroScreen(name='intro'))
         sm.add_widget(GameScreen(name='game'))
+        sm.add_widget(Scores(name='scores'))
         return sm
 
 
