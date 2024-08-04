@@ -262,18 +262,20 @@ class MinesweeperButton(Button):
     def handle_long_press(self):
         global remaining_mines
         print(f"Button at {self.grid_pos} long pressed")
-        if self.background_normal == 'atlas://data/images/defaulttheme/button':
-            self.background_normal = 'img/flag.png'
-            remaining_mines -= 1
-        elif self.background_normal == 'img/flag.png':
-            self.background_normal = 'img/question.png'
-            remaining_mines += 1
-        elif self.background_normal == 'img/question.png':
-            self.background_normal = 'atlas://data/images/defaulttheme/button'
-        self.game_screen.update_mines()
-        self.game_screen.update_uncover()
-        if self.game_screen.check_win():
-            self.game_screen.win()
+        # cannot long press on an uncovered button
+        if self.background_color != [0, 0, 0, 1]:
+            if self.background_normal == 'atlas://data/images/defaulttheme/button':
+                self.background_normal = 'img/flag.png'
+                remaining_mines -= 1
+            elif self.background_normal == 'img/flag.png':
+                self.background_normal = 'img/question.png'
+                remaining_mines += 1
+            elif self.background_normal == 'img/question.png':
+                self.background_normal = 'atlas://data/images/defaulttheme/button'
+            self.game_screen.update_mines()
+            self.game_screen.update_uncover()
+            if self.game_screen.check_win():
+                self.game_screen.win()
 
     def uncover_neighbors(self, x, y, processed):
         if (x, y) in processed:
