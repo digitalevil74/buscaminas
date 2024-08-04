@@ -30,19 +30,14 @@ from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
+from kivy.uix.popup import Popup
 from kivy.clock import Clock
-
-# Set the window size
-Window.size = (800, 558)
-Window.minimum_width = 800
-Window.minimum_height = 558
-Window.resizable = False
 
 
 class IntroScreen(Screen):
     def __init__(self, **kwargs):
         super(IntroScreen, self).__init__(**kwargs)
-        main_layout=BoxLayout(orientation='vertical')
+        main_layout = BoxLayout(orientation='vertical')
         hor_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=100)
         game_logo = Image(source='img/bm.webp')
         self.add_widget(main_layout)
@@ -53,6 +48,7 @@ class IntroScreen(Screen):
             self.dif_button.bind(on_press=lambda x, i=i: self.select_difficulty(i))
             hor_layout.add_widget(self.dif_button)
         main_layout.add_widget(game_logo)
+
 
     def select_difficulty(self, difficulty):
         self.manager.get_screen('game').start_game(difficulty)
@@ -156,6 +152,8 @@ class GameScreen(Screen):
         print(f'Total seconds: {self.elapsed}')
         self.ticking.cancel()
         self.show_all_mines()
+        popup = RestartPopup(parent_screen=self)
+        popup.open()
 
     def win(self):
         print('WOW has ganado!!')
@@ -179,6 +177,29 @@ class GameScreen(Screen):
         score = int(base + gem - (total_time * 10000))
         print(f'base {base} gem {gem} score {score}')
         return  max(0, score)
+
+    def reset_game(self):
+        self.main_layout.clear_widgets()  # Clear the main layout
+        self.bombs_layout.clear_widgets()  # Clear the bombs layout
+        self.top_info.clear_widgets()  # Clear the top info layout
+
+        # Reinitialize the widgets
+        self.label1 = Label(text=str(remaining_mines), font_name='Gabriola', font_size=36, color=[1, 0, 0, 1])
+        self.uncovered = Label(text=f'Despejado: 0', font_name='Gabriola', font_size=36)
+        self.time_label = Label(text='Tiempo: 00:00', font_name='Gabriola', font_size=36)
+        self.main_layout.add_widget(self.top_info)
+        self.top_info.add_widget(self.label1)
+        self.top_info.add_widget(self.uncovered)
+        self.top_info.add_widget(self.time_label)
+        self.main_layout.add_widget(self.bombs_layout)
+        self.buttons = {}  # Reset buttons dictionary
+        self.first_move = True
+        self.elapsed = 0
+        # Set the window size
+        Window.size = (800, 558)
+        Window.minimum_width = 800
+        Window.minimum_height = 558
+        Window.resizable = False
 
 
 class Scores(Screen):
@@ -311,6 +332,47 @@ class MinesweeperButton(Button):
                 }.get(board[self.grid_pos])
 
 
+class RestartPopup(Popup):
+    def __init__(self, parent_screen, **kwargs):
+        super(RestartPopup, self).__init__(**kwargs)
+        self.parent_screen = parent_screen
+        self.title = 'Perdiste!'
+        self.size_hint = (0.6, 0.4)
+
+        # Create a BoxLayout for the content
+        content = BoxLayout(orientation='vertical')
+
+        # Add a label
+        content.add_widget(Label(text='Jugar de nuevo?', size_hint_y=0.6))
+
+        # Create a BoxLayout for the buttons
+        button_layout = BoxLayout(size_hint_y=0.4)
+
+        # Create Yes button
+        yes_button = Button(text='Si')
+        yes_button.bind(on_release=self.on_yes)
+        button_layout.add_widget(yes_button)
+
+        # Create No button
+        no_button = Button(text='No')
+        no_button.bind(on_release=self.on_no)
+        button_layout.add_widget(no_button)
+
+        # Add button_layout to the content
+        content.add_widget(button_layout)
+
+        self.add_widget(content)
+
+    def on_yes(self, instance):
+        self.dismiss()
+        self.parent_screen.reset_game()  # Reset the game screen
+        self.parent_screen.manager.current = 'intro'
+
+    def on_no(self, instance):
+        self.dismiss()
+        sys.exit()
+
+
 class BuscaMinas(App):
     def build(self):
         sm = ScreenManager()
@@ -322,6 +384,8 @@ class BuscaMinas(App):
 
 def reset_board(x, y, diff):
     global board, x_board, y_board, remaining_mines, mines
+    if 'board' in globals():
+        del board
     x_board = x - 1
     y_board = y - 1
     board = np.zeros((x, y), dtype=int)
